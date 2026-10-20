@@ -1,0 +1,19 @@
+ja-jianying-mcp
+Copyright 2026 Jeffery Asia
+
+This repository is a fork of pyJianYingDraft
+(https://github.com/GuanYixuan/pyJianYingDraft), licensed under the
+Apache License, Version 2.0. All files outside the directories and files
+listed below are from the original project and are unmodified.
+
+Added in this fork (also licensed under the Apache License, Version 2.0):
+  - ja/                 MCP tools for Claude, installer, self-test and usage rules
+  - .github/README.md   landing page for this fork
+  - NOTICE              this file
+
+Third-party packages installed at setup time (not included in this
+repository): mcp, edge-tts, pymediainfo, imageio, and optionally
+faster-whisper. Each is subject to its own license.
+
+"剪映" (JianyingPro) is a trademark of its respective owner. This project is
+not affiliated with or endorsed by the owner of JianyingPro.
