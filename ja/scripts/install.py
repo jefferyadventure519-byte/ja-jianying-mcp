@@ -11,7 +11,7 @@
 用法：
     python ja/scripts/install.py --check-only      只检查环境，不改任何东西
     python ja/scripts/install.py                   完整安装（运行环境建在 %LOCALAPPDATA%\\ja-jianying\\.venv）
-    python ja/scripts/install.py --with-asr        同时装听写（faster-whisper，首次会下载约 500 MB 模型）
+    python ja/scripts/install.py --with-asr        同时装听写（faster-whisper，下载约 460 MB 模型，Windows 上占约 0.9 GB）
     python ja/scripts/install.py --uninstall       去掉注册和技能（下载的文件留着，自己删目录即可）
 只用 Python 标准库。只在 Windows 上验证过。
 """
@@ -33,7 +33,7 @@ PIP_MIRROR = "https://pypi.tuna.tsinghua.edu.cn/simple"
 HF_MIRROR = "https://hf-mirror.com"
 PKGS = ["mcp[cli]>=1.30,<2", "edge-tts>=7.3,<8", "pymediainfo>=6", "imageio>=2.30",
         "uiautomation>=2; sys_platform == 'win32'"]  # 后三项是 pyJianYingDraft 自己声明的依赖（setup.py）
-ASR_PKGS = ["faster-whisper>=1.1,<2"]
+ASR_PKGS = ["faster-whisper>=1.1,<2", "av>=11,<19"]  # av 19.0.1 去掉了 open() 的 metadata_errors 参数，faster-whisper 1.2.1 听写会报错
 REPORT = {"time": time.strftime("%Y-%m-%d %H:%M:%S"), "kit": str(KIT), "kit_version": jy_core.KIT_VERSION,
           "steps": [], "blockers": [], "warnings": [], "human_todo": []}
 
@@ -93,19 +93,35 @@ def make_venv(args):
     step("建运行环境并装依赖", False, "pip 安装失败：" + err[-300:]); return None
 
 
+def _reachable(url, timeout=10):
+    import urllib.request
+    try:
+        urllib.request.urlopen(urllib.request.Request(url, method="HEAD"), timeout=timeout)
+        return True
+    except Exception:
+        return False
+
+
 def prepare_asr(py, args):
-    """先把听写模型下载好，免得第一次听写时卡很久。下载不了 huggingface.co 时改用镜像。"""
+    """先把听写模型下载好（约 460 MB，Windows 上占约 0.9 GB 磁盘），免得第一次听写时卡很久。
+
+    实测：模型库默认的 Xet 下载协议在本机代理环境下卡在 0 字节，关掉（HF_HUB_DISABLE_XET=1）后 3–4 分钟下完。
+    先用 10 秒探测 huggingface.co，连不上就直接用国内镜像。
+    """
+    probe = "/Systran/faster-whisper-%s/resolve/main/config.json" % args.asr_model
+    order = [None, HF_MIRROR] if _reachable("https://huggingface.co" + probe) else [HF_MIRROR, None]
     code = "from faster_whisper import WhisperModel; WhisperModel(%r, device='cpu', compute_type='int8'); print('ok')" % args.asr_model
-    for endpoint in (None, HF_MIRROR):
-        env = dict(os.environ)
+    err = ""
+    for endpoint in order:
+        env = dict(os.environ, HF_HUB_DISABLE_XET="1")
         if endpoint:
             env["HF_ENDPOINT"] = endpoint
-        rc, out, err = run([str(py), "-c", code], timeout=3600, env=env)
+        rc, out, err = run([str(py), "-c", code], timeout=1200, env=env)
         if rc == 0 and "ok" in out:
-            step("下载听写模型 " + args.asr_model, True, "用了镜像 " + endpoint if endpoint else "")
-            return endpoint
-    step("下载听写模型 " + args.asr_model, False, "下载失败，第一次听写时会再试：" + err[-200:])
-    return None
+            step("下载听写模型 " + args.asr_model, True, "用了镜像 " + endpoint if endpoint else "从 huggingface.co")
+            return {"HF_HUB_DISABLE_XET": "1", **({"HF_ENDPOINT": endpoint} if endpoint else {})}
+    step("下载听写模型 " + args.asr_model, False, "两个下载源都没成功，第一次听写时会再试：" + err[-200:])
+    return {"HF_HUB_DISABLE_XET": "1"}
 
 
 def atomic_write_json(path, obj, indent):
@@ -115,11 +131,10 @@ def atomic_write_json(path, obj, indent):
     os.replace(tmp, path)
 
 
-def register(py, args, hf_endpoint=None, remove=False):
+def register(py, args, extra_env=None, remove=False):
     cfg = args.claude_config or os.path.join(os.path.expanduser("~"), ".claude.json")
     entry = {"command": str(py), "args": [str(JA / "server.py")], "env": {}}
-    if hf_endpoint:
-        entry["env"]["HF_ENDPOINT"] = hf_endpoint
+    entry["env"].update(extra_env or {})
     if os.path.isfile(cfg):
         raw = open(cfg, encoding="utf-8").read()
         try:
@@ -197,7 +212,7 @@ def main():
         os.makedirs(args.dir, exist_ok=True)
         py = make_venv(args)
         if py:
-            hf = prepare_asr(py, args) if args.with_asr else None
+            hf = prepare_asr(py, args) if args.with_asr else {}
             step("在 Claude 里注册", None, "按参数跳过") if args.skip_register else register(py, args, hf)
             step("安装技能", None, "按参数跳过") if args.skip_skill else install_skill(args)
             REPORT["selftest_command"] = '"%s" "%s"%s' % (py, JA / "scripts" / "selftest.py", "" if args.with_asr else " --no-asr")

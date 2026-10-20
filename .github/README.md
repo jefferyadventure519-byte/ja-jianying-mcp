@@ -45,7 +45,7 @@ Claude 会依次完成：检查环境、下载、安装、注册、自检，最�
 | 剪映专业版 | 装好并打开过一次 |
 | Python 3.10 或更新 | 推荐 3.11，从 [python.org](https://www.python.org/downloads/) 安装，勾选「Add python.exe to PATH」 |
 | 能访问 github.com | 安装要从 GitHub 下载 |
-| 联网 | 配音（edge-tts）要联网；听写模型第一次要下载约 500 MB |
+| 联网 | 配音（edge-tts）要联网；听写模型要下载约 460 MB（占约 0.9 GB 磁盘） |
 
 ## 装好以后怎么用
 
