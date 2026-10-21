@@ -220,13 +220,13 @@ def jy_add_text(draft: str, text: str, start: float, duration: float, font_size:
 
 @mcp.tool()
 def jy_save(draft: str) -> dict:
-    """保存草稿。保存后请人在剪映首页打开它检查、导出（剪映开着的话先回首页，看不到就重开剪映）。"""
+    """保存草稿。保存后请人在剪映首页打开它检查、导出（剪映开着的话要完全关掉再打开，新草稿才会出现在首页列表里）。"""
     d = _get(draft)
     d["script"].save()
     core.fresh_meta(d["dir"], d["script"].duration)
     return {"draft": draft, "folder": str(d["dir"]), "duration_s": round(d["script"].duration / 1e6, 3),
             "tracks": [(t.track_type.name, n, len(t.segments)) for n, t in d["script"].tracks.items()],
-            "next": ["在剪映首页打开这个草稿（开着的话回首页；列表里没有就重开剪映）。",
+            "next": ["在剪映首页打开这个草稿（剪映开着的话要完全关掉再打开，新草稿才会出现在列表里）。",
                      "检查画面、字幕位置、配音，然后点右上角「导出」。",
                      "剪映打开后草稿会加密，AI 读不回来；要改版请让 Claude 新建一个 _v2。"]}
 
