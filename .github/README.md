@@ -50,7 +50,7 @@ Claude 会依次完成：检查环境、下载、安装、注册、自检，最�
 ## 装好以后怎么用
 
 1. 在 Claude 的新会话里说你要做什么，比如「把 D:\素材\采访.mp4 做成竖版，配上字幕，字号 8，位置 Y -780」。
-2. Claude 保存草稿后，打开剪映（开着的话回首页），打开这个草稿检查。
+2. Claude 保存草稿后，打开剪映，打开这个草稿检查。剪映开着的话要完全关掉再打开，新草稿才会出现在首页列表里。
 3. 点右上角「导出」。
 4. 要改就让 Claude 新建一版（`_v2`）。剪映打开过的草稿会被加密，Claude 读不回来。
 
@@ -77,7 +77,9 @@ Claude 会依次完成：检查环境、下载、安装、注册、自检，最�
 
 ## 卸载
 
-让 Claude 运行 `python ja/scripts/install.py --uninstall`：去掉 Claude 里的注册和规则技能。运行环境在 `%LOCALAPPDATA%\ja-jianying`，生成的配音和字幕在 `文档\ja-jianying`，直接删目录即可。
+让 Claude 在 PowerShell 里运行 `python "$env:LOCALAPPDATA\ja-jianying\kit\ja\scripts\install.py" --uninstall`：去掉 Claude 里的注册和规则技能。运行环境在 `%LOCALAPPDATA%\ja-jianying`，生成的配音和字幕在 `文档\ja-jianying`，直接删目录即可。
+
+从桌面版 Claude 安装的话，运行环境实际在 `%LOCALAPPDATA%\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Local\ja-jianying`：桌面版会把 `%LOCALAPPDATA%` 下新建的目录放进它自己的私有目录，所以在资源管理器里打开 `%LOCALAPPDATA%\ja-jianying` 是找不到的，要到上面这个位置去删。
 
 ## 许可与致谢
 
